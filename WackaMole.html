@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whac a Mole</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            text-align: center;
+            background: url("./mario-bg.jpg");
+            background-size: cover;
+        }
+        #score, #timer {
+            color: brown;
+            font-size: 24px;
+        }
+        h1 {
+            color: #8B0000;
+            text-shadow: 2px 2px 4px #FFFAFA;
+        }
+        #board {
+            width: 540px;
+            height: 540px;
+            margin: 20px auto;
+            display: flex;
+            flex-wrap: wrap;
+            background: url("./soil.png");
+            background-size: cover;
+            border: 3px solid white;
+            border-radius: 25px;
+        }
+        #board div {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            background-image: url("./pipe.png");
+            background-size: cover;
+            transition: transform 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        #board div img {
+            width: 100px;
+            height: 100px;
+            user-select: none;
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            opacity: 0;
+            transition: opacity 0.3s ease, top 0.3s ease;
+        }
+        #board div img.show {
+            opacity: 1;
+            top: 20px;
+        }
+        #board div.clicked {
+            animation: glow 0.3s ease;
+        }
+        @keyframes glow {
+            from { box-shadow: 0 0 5px 5px #FFD700; }
+            to { box-shadow: 0 0 0 0 transparent; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes gameOver {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        #Play, #start {
+            height: 50px;
+            width: 130px;
+            border: none;
+            outline: none;
+            border-radius: 10px;
+            font-weight: 600;
+            background-color: rgb(220, 79, 28);
+            font-size: 20px;
+            color: white;
+            cursor: pointer;
+            margin: 10px;
+        }
+        #gameOverMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: yellow;
+            color: rgb(220, 79, 28);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            font-size: 48px;
+            text-shadow: 2px 2px 5px black;
+            z-index: 1000;
+            animation: fadeIn 2s forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="br">
+        <h1>Whac a Mole</h1>
+        <h2 id="timer">Time: 30</h2>
+        <h2 id="score">Your Score: 0</h2>
+        <div id="board"></div><br>
+        <button id="start">Start Game</button>
+        <button id="Play" disabled>Play Again</button>
+    </div>
+    <script>
+        let currMoleTile;
+        let currPlantTile;
+        let score = 0;
+        let gameOver = false;
+        let moleInterval;
+        let plantInterval;
+        let timeLeft = 30;
+        let timerInterval;
+
+        document.getElementById("start").addEventListener("click", start);
+        document.getElementById("Play").addEventListener("click", restartGame);
+
+        function start() {
+            setGame();
+            startTimer();
+            document.getElementById("start").disabled = true;
+        }
+
+        function setGame() {
+            for (let i = 0; i < 9; i++) { 
+                let tile = document.createElement("div");
+                tile.id = i.toString();
+                tile.addEventListener("click", selectTile);
+                document.getElementById("board").appendChild(tile);
+            }
+            moleInterval = setInterval(setMole, 1000); 
+            plantInterval = setInterval(setPlant, 2000); 
+        }
+        
+
+        function restartGame() {
+            clearInterval(moleInterval);
+            clearInterval(plantInterval);
+            clearInterval(timerInterval);
+            document.getElementById("board").innerHTML = ""; 
+            score = 0;
+            gameOver = false;
+            timeLeft = 30;
+            document.getElementById("score").innerText = "Your Score: " + score;
+            document.getElementById("timer").innerText = "Time: " + timeLeft;
+            document.getElementById("start").disabled = true; 
+            document.getElementById("Play").disabled = true; 
+            hideGameOverMessage();
+            setGame();
+            startTimer();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById("timer").innerText = "Time: " + timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    gameOver = true;
+                    clearInterval(moleInterval);
+                    clearInterval(plantInterval);
+                    document.getElementById("score").innerText = "TIME UP! Your Score: " + score;
+                    document.getElementById("Play").disabled = false; 
+                }
+            }, 1000);
+        }
+
+        function getRandomTile() {
+            let num = Math.floor(Math.random() * 9);
+            return num.toString();
+        }
+
+        function setMole() {
+            if (gameOver) return;
+            if (currMoleTile) currMoleTile.innerHTML = "";
+            let mole = document.createElement("img");
+            mole.src = "./monty-mole.png";
+            mole.classList.add('show');
+            let num = getRandomTile();
+            if (currPlantTile && currPlantTile.id == num) return;
+            currMoleTile = document.getElementById(num);
+            currMoleTile.appendChild(mole);
+        }
+
+        function setPlant() {
+            if (gameOver) return;
+            if (currPlantTile) currPlantTile.innerHTML = "";
+            let plant = document.createElement("img");
+            plant.src = "./piranha-plant.png";
+            plant.classList.add('show');
+            let num = getRandomTile();
+            if (currMoleTile && currMoleTile.id == num) return;
+            currPlantTile = document.getElementById(num);
+            currPlantTile.appendChild(plant);
+        }
+
+        function selectTile() {
+            if (gameOver) return;
+
+            if (this === currMoleTile) {  
+                score += 10;
+                document.getElementById("score").innerText = "Your Score: " + score;
+                currMoleTile.innerHTML = ""; 
+                currMoleTile = null; 
+            } else if (this === currPlantTile) {
+                document.getElementById("score").innerText = "GAME OVER: " + score;
+                gameOver = true;
+                clearInterval(moleInterval);
+                clearInterval(plantInterval);
+                clearInterval(timerInterval);
+                document.getElementById("Play").disabled = false;
+                hidePipes();
+                showGameOverMessage();
+            }
+        }
+
+        function hidePipes() {
+            const tiles = document.querySelectorAll('#board div');
+            tiles.forEach(tile => {
+                tile.style.animation = 'gameOver 1s forwards';
+            });
+        }
+
+        function showGameOverMessage() {
+            const gameOverText = document.createElement('div');
+            gameOverText.id = 'gameOverMessage';
+            gameOverText.innerText = "Game Over!";
+            document.body.appendChild(gameOverText);
+        }
+
+        function hideGameOverMessage() {
+            const gameOverText = document.getElementById('gameOverMessage');
+            if (gameOverText) {
+                document.body.removeChild(gameOverText);
+            }
+        }
+    </script>
+</body>
+</html>
